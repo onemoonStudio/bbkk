@@ -1,5 +1,6 @@
 package org.seoul.kk.config;
 
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -10,20 +11,23 @@ import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.FlushModeType;
 import javax.sql.DataSource;
 import java.util.Properties;
 
 @Configuration
-@EnableJpaRepositories(basePackages = "org.seoul.kk.repository")
-@EnableTransactionManagement
+@EnableJpaRepositories(basePackages = "org.seoul.kk.repository",
+        transactionManagerRef = "bbkkTransactionManager",
+        entityManagerFactoryRef = "bbkkEntityManagerFactory"
+)
+@EnableCaching
 public class HibernateJpaConfig {
 
     private static final String ENTITY_LOCATE = "org.seoul.kk.entity";
 
-    @Bean
+    @Bean(name = "bbkkEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource, Properties jpaProperties) {
         LocalContainerEntityManagerFactoryBean emf = new LocalContainerEntityManagerFactoryBean();
         emf.setDataSource(dataSource);
@@ -45,12 +49,10 @@ public class HibernateJpaConfig {
         return new HibernateExceptionTranslator();
     }
 
-    @Bean
+    @Bean(name = "bbkkTransactionManager")
     public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory){
-        JpaTransactionManager transactionManager = new JpaTransactionManager();
-        transactionManager.setEntityManagerFactory(entityManagerFactory);
 
-        return transactionManager;
+        return new JpaTransactionManager(entityManagerFactory);
     }
 
     @Bean
